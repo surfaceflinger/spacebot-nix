@@ -187,6 +187,7 @@
   commonBuildEnvWithLinker = commonRustBuildEnvWithLinker + commonBuildEnv;
 
   dummyRustSource = pkgs.writeText "dummy.rs" ''
+    #![allow(dead_code)]
     fn main() {}
   '';
 
