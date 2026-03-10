@@ -121,6 +121,21 @@ in {
       description = "Extra environment variables passed to the service.";
     };
 
+    masterKeyFile = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      example = "/run/secrets/spacebot/master-key";
+      description = ''
+        Path to a file containing the hex-encoded Spacebot secrets master key.
+        When set, the module stages the key at `/run/spacebot/master_key` during
+        service startup so Spacebot can auto-unlock the encrypted secrets store.
+
+        This is intended for runtime-managed secrets such as sops-nix or agenix.
+        The file contents should be the same hex string shown by
+        `spacebot secrets encrypt` or `spacebot secrets rotate`.
+      '';
+    };
+
     port = mkOption {
       type = types.port;
       default = 19898;
@@ -181,6 +196,19 @@ in {
         EOF
           chmod 600 "${cfg.dataDir}/config.toml"
         fi
+
+        ${lib.optionalString (cfg.masterKeyFile != null) ''
+          if [ ! -r "$CREDENTIALS_DIRECTORY/spacebot-master-key" ]; then
+            echo "spacebot: systemd credential spacebot-master-key is missing or unreadable" >&2
+            exit 1
+          fi
+
+          umask 077
+          tr -d '[:space:]' < "$CREDENTIALS_DIRECTORY/spacebot-master-key" \
+            | ${pkgs.python3}/bin/python3 -c 'import binascii, sys; sys.stdout.buffer.write(binascii.unhexlify(sys.stdin.read()))' \
+            > /run/spacebot/master_key
+        ''}
+
         exec ${selectedPackage}/bin/spacebot start --foreground
       '';
 
@@ -189,6 +217,8 @@ in {
           Type = "simple";
           User = cfg.user;
           Group = cfg.group;
+          RuntimeDirectory = "spacebot";
+          RuntimeDirectoryMode = "0700";
           StateDirectory = baseNameOf cfg.dataDir;
           StateDirectoryMode = "0750";
 
@@ -196,6 +226,7 @@ in {
           RestartSec = "5s";
 
           EnvironmentFile = lib.mkIf (cfg.environmentFile != null) cfg.environmentFile;
+          LoadCredential = lib.mkIf (cfg.masterKeyFile != null) ["spacebot-master-key:${cfg.masterKeyFile}"];
         }
         // lib.optionalAttrs cfg.hardening {
           NoNewPrivileges = true;
