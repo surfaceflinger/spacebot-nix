@@ -7,7 +7,7 @@
 }: let
   inherit (pkgs) lib onnxruntime stdenv;
 
-  frontendNodeModulesHash = "sha256-FQ1FtEDT4YToVCA6tTqrYiv/06sa5K4FYTywpjUQDRM=";
+  frontendNodeModulesHash = "sha256-RBZJ9Ipqvm8l7cb9jfdYOLPTv4k2f8AvLM/8cxOrBy8=";
 
   bunInstallOs =
     if stdenv.hostPlatform.isDarwin
