@@ -10,6 +10,7 @@
     "^docs(/.*)?$"
     "^presets(/.*)?$"
     "^src(/.*)?$"
+    "^skills(/.*)?$"
     "^migrations(/.*)?$"
     "^prompts(/.*)?$"
   ];
